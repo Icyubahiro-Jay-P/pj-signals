@@ -68,6 +68,16 @@ input { font: 600 1rem var(--mono); min-height: 44px; padding: 0 12px; border-ra
 .ladder .seg { position: absolute; top: 0; height: 6px; }
 .pl { font: 600 1.25rem var(--mono); }
 .win .pl { color: var(--buy); } .loss .pl { color: var(--sell); }
+.chips { display: flex; gap: 6px; margin-block-end: 12px; flex-wrap: wrap; }
+.chips button { min-height: 36px; padding: 0 14px; border-radius: 18px; font-size: .85rem; }
+.chips button[aria-pressed="true"] { background: var(--text); color: var(--ink); border-color: var(--text); }
+.feed[data-f="small"] .slip:not(.size-small), .feed[data-f="medium"] .slip:not(.size-medium), .feed[data-f="big"] .slip:not(.size-big) { display: none; }
+.size { font: 600 .7rem var(--mono); text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-inline-start: 6px; vertical-align: 2px; }
+.size-big .size { color: var(--gold); border-color: var(--gold); }
+.phone { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-block-start: 20px; }
+.phone h2 { font-size: 1.05rem; margin: 0 0 6px; }
+.phone p { margin: 0 0 12px; color: var(--muted); font-size: .9rem; }
+.phone .row a { flex: 1 1 120px; justify-content: center; }
 .empty { text-align: center; color: var(--muted); padding: 40px 16px; border: 1px dashed var(--line); border-radius: 12px; }
 .note { color: var(--muted); font-size: .8rem; margin-block-start: 28px; }
 [hidden] { display: none !important; }
@@ -93,12 +103,25 @@ input { font: 600 1rem var(--mono); min-height: 44px; padding: 0 12px; border-ra
     <div class="bar">
       <button id="share" type="button">Copy invite link</button>
       <button id="notify" type="button">Alert me in this tab</button>
-      <a class="btn" id="apk" href="https://github.com/Icyubahiro-Jay-P/pj-signals/releases/latest/download/pj-signals.apk">Android app</a>
+      <button id="refresh" type="button">Refresh</button>
       <span class="spacer"></span>
       <button id="leave" type="button">Leave</button>
     </div>
-    <ul class="feed" id="feed"></ul>
+    <div class="chips" role="group" aria-label="Move size">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="small" aria-pressed="false">Small moves</button>
+      <button type="button" data-f="medium" aria-pressed="false">Medium</button>
+      <button type="button" data-f="big" aria-pressed="false">Big moves</button>
+    </div>
+    <ul class="feed" id="feed" data-f="all"></ul>
     <div class="empty" id="empty">No signals in the last 12 hours. The bots trade a few times a week, so this stays quiet most of the day. New ones appear here live.</div>
+    <div class="phone" id="phone">
+      <h2>Instant alerts on your phone</h2>
+      <p>Install the free <b>ntfy</b> app from Google Play (trusted, open source, no warnings). Then tap the sizes you want: each one subscribes the app, and it rings within seconds of a trade even when the phone is locked.</p>
+      <div class="row" style="margin-block-end:10px"><a class="btn" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" rel="noopener">1. Get ntfy on Google Play</a></div>
+      <div class="row" id="subs"></div>
+      <p style="margin:12px 0 0">Or <a href="https://github.com/Icyubahiro-Jay-P/pj-signals/releases/latest/download/pj-signals.apk" style="color:var(--muted)">our own PJ app (APK)</a>: Android warns about any app from outside the Play Store, so ntfy is the easier choice for friends.</p>
+    </div>
   </section>
 
   <p class="note">Demo bots under test. Not financial advice: the lab expects losing weeks. Signals older than 12 hours drop off.</p>
@@ -121,7 +144,8 @@ function parse(m) {
   // title shapes from signal_push.py: "BOT: [PENDING ]SIDE SYMBOL", "BOT: CLOSED SYMBOL +1.23", "BOT: pending TYPE SYMBOL gone"
   const t = m.title || "Signal", i = t.indexOf(": "), bot = i > 0 ? t.slice(0, i) : "", rest = i > 0 ? t.slice(i + 2) : t;
   const num = k => { const r = new RegExp("^" + k + " (\\S+)", "m").exec(m.message || ""); return r && r[1] !== "none" ? parseFloat(r[1]) : null; };
-  let x = { bot, rest, time: m.time, body: m.message || "" };
+  const size = (m.tags || []).find(t => ["small", "medium", "big"].includes(t)) || "";
+  let x = { bot, rest, size, time: m.time, body: m.message || "" };
   let c = /^CLOSED (\S+) ([+-][\d.]+)/.exec(rest);
   if (c) return { ...x, kind: "close", symbol: c[1], pl: parseFloat(c[2]) };
   let o = /^(PENDING )?(\S+) (\S+)$/.exec(rest);
@@ -147,16 +171,16 @@ function render(s) {
   const li = document.createElement("li");
   if (s.kind === "open") {
     const side = s.side.startsWith("BUY") ? "buy" : "sell";
-    li.className = "slip " + side;
-    li.innerHTML = `<div class="top"><div class="what"><span class="side">${esc(s.side.replace("_", " "))}</span> ${esc(s.symbol)}${s.pending ? '<span class="pending">PENDING</span>' : ""}</div><div class="when">${ago(s.time)}</div></div>
+    li.className = `slip ${side} size-${s.size}`;
+    li.innerHTML = `<div class="top"><div class="what"><span class="side">${esc(s.side.replace("_", " "))}</span> ${esc(s.symbol)}${s.pending ? '<span class="pending">PENDING</span>' : ""}${s.size ? `<span class="size">${s.size}</span>` : ""}</div><div class="when">${ago(s.time)}</div></div>
       <div class="bot">${esc(s.bot)}${s.lots ? " · " + s.lots + " lot" : ""}</div>
       <div class="nums"><div>Entry<b>${fmt(s.entry)}</b></div><div class="sl">Stop loss<b>${fmt(s.sl)}</b></div><div class="tp">Take profit<b>${fmt(s.tp)}</b></div></div>${ladder(s)}`;
   } else if (s.kind === "close") {
-    li.className = "slip " + (s.pl >= 0 ? "win" : "loss");
+    li.className = `slip ${s.pl >= 0 ? "win" : "loss"} size-${s.size}`;
     li.innerHTML = `<div class="top"><div class="what">Closed ${esc(s.symbol)}</div><div class="when">${ago(s.time)}</div></div>
       <div class="top"><div class="bot">${esc(s.bot)}</div><div class="pl">${s.pl >= 0 ? "+" : ""}${s.pl.toFixed(2)}</div></div>`;
   } else {
-    li.className = "slip";
+    li.className = `slip size-${s.size}`;
     li.innerHTML = `<div class="top"><div class="what">${esc(s.rest)}</div><div class="when">${ago(s.time)}</div></div><div class="bot">${esc(s.bot ? s.bot + " · " : "")}${esc(s.body)}</div>`;
   }
   return li;
@@ -189,7 +213,9 @@ function join(code) {
   if (location.hash) history.replaceState(null, "", location.pathname);   // keep the code out of screenshots
   $("join").hidden = true; $("room").hidden = false;
   $("feed").innerHTML = ""; $("empty").hidden = false; seen.clear();
-  if (app) $("apk").hidden = $("notify").hidden = true;
+  if (app) $("phone").hidden = $("notify").hidden = true;
+  $("subs").innerHTML = [["", "All signals"], ["-small", "Small"], ["-medium", "Medium"], ["-big", "Big"]]
+    .map(([suf, label]) => `<a class="btn" href="ntfy://ntfy.sh/${encodeURIComponent(code + suf)}">${label}</a>`).join("");
   connect();
 }
 
@@ -199,6 +225,11 @@ $("joinForm").onsubmit = e => {
   if (!valid(c)) { $("code").setCustomValidity("Letters, numbers, - and _ only"); $("code").reportValidity(); return; }
   join(c);
 };
+$("refresh").onclick = () => { $("feed").innerHTML = ""; $("empty").hidden = false; seen.clear(); connect(); };
+document.querySelectorAll(".chips button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".chips button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $("feed").dataset.f = b.dataset.f;
+});
 $("code").oninput = () => $("code").setCustomValidity("");
 $("leave").onclick = () => {
   es && es.close(); topic = null;
