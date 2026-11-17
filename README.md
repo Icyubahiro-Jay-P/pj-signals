@@ -1,6 +1,6 @@
-# PJ Signals
+# JP Signals
 
-Live trade signals (entry, SL, TP, closes) from the PJ MT5 demo bots. No backend, no cost.
+Live trade signals (entry, SL, TP, closes) from the JP MT5 demo bots. No backend, no cost.
 
 ```
 MT5 bots -> PJ_Live service -> PJ_live.json -> signal_push.py (Jay's PC) -> ntfy.sh topic -> web page (Vercel) + Android app

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PJ Signals</title>
-<meta name="description" content="Live trade signals (entry, SL, TP) from the PJ demo bots.">
+<title>JP Signals</title>
+<meta name="description" content="Live trade signals (entry, SL, TP) from the JP demo bots.">
 <meta name="theme-color" content="#0E1116">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -87,7 +87,7 @@ input { font: 600 1rem var(--mono); min-height: 44px; padding: 0 12px; border-ra
 <body>
 <main>
   <header>
-    <h1>PJ <b>Signals</b></h1>
+    <h1>JP <b>Signals</b></h1>
     <div class="status" id="status"><span class="dot"></span><span id="statusText">not joined</span></div>
   </header>
 
@@ -120,7 +120,7 @@ input { font: 600 1rem var(--mono); min-height: 44px; padding: 0 12px; border-ra
       <p>Install the free <b>ntfy</b> app from Google Play (trusted, open source, no warnings). Then tap the sizes you want: each one subscribes the app, and it rings within seconds of a trade even when the phone is locked.</p>
       <div class="row" style="margin-block-end:10px"><a class="btn" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" rel="noopener">1. Get ntfy on Google Play</a></div>
       <div class="row" id="subs"></div>
-      <p style="margin:12px 0 0">Or <a href="https://github.com/Icyubahiro-Jay-P/pj-signals/releases/latest/download/pj-signals.apk" style="color:var(--muted)">our own PJ app (APK)</a>: Android warns about any app from outside the Play Store, so ntfy is the easier choice for friends.</p>
+      <p style="margin:12px 0 0">Or <a href="https://github.com/Icyubahiro-Jay-P/pj-signals/releases/latest/download/pj-signals.apk" style="color:var(--muted)">our own JP app (APK)</a>: Android warns about any app from outside the Play Store, so ntfy is the easier choice for friends.</p>
     </div>
   </section>
 
@@ -193,7 +193,7 @@ function onMessage(m, fresh) {
   $("feed").prepend(render(s));
   $("empty").hidden = true;
   if (fresh && !app && "Notification" in window && Notification.permission === "granted" && document.hidden)
-    new Notification(m.title || "PJ signal", { body: m.message || "", icon: "icon.svg", tag: m.id });
+    new Notification(m.title || "JP signal", { body: m.message || "", icon: "icon.svg", tag: m.id });
 }
 
 function connect() {

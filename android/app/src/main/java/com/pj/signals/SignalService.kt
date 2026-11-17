@@ -24,7 +24,7 @@ class SignalService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         channels()
-        val n = builder(CH_LIVE).setContentTitle("PJ Signals").setContentText("Listening for signals")
+        val n = builder(CH_LIVE).setContentTitle("JP Signals").setContentText("Listening for signals")
             .setSmallIcon(R.drawable.ic_stat).setOngoing(true).setContentIntent(openApp()).build()
         if (Build.VERSION.SDK_INT >= 34) startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         else startForeground(1, n)   // must happen before any stopSelf, or Android kills the app
@@ -78,7 +78,7 @@ class SignalService : Service() {
     }
 
     private fun show(j: JSONObject) {
-        val title = j.optString("title").ifEmpty { "PJ signal" }
+        val title = j.optString("title").ifEmpty { "JP signal" }
         val msg = j.optString("message")
         @Suppress("DEPRECATION")
         val n = builder(CH_SIG).setContentTitle(title).setContentText(msg)
