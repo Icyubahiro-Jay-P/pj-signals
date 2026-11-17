@@ -187,10 +187,17 @@ function render(s) {
 }
 
 function onMessage(m, fresh) {
+  if (m.event === "message_delete") {                      // sent by `curl -X DELETE ntfy.sh/<topic>/<id>`
+    seen.add(m.sequence_id);
+    document.querySelector(`[data-id="${CSS.escape(m.sequence_id)}"]`)?.remove();
+    $("empty").hidden = !!$("feed").children.length;
+    return;
+  }
   if (m.event !== "message" || seen.has(m.id)) return;
   seen.add(m.id);
-  const s = parse(m);
-  $("feed").prepend(render(s));
+  const s = parse(m), li = render(s);
+  li.dataset.id = m.id;
+  $("feed").prepend(li);
   $("empty").hidden = true;
   if (fresh && !app && "Notification" in window && Notification.permission === "granted" && document.hidden)
     new Notification(m.title || "JP signal", { body: m.message || "", icon: "icon.svg", tag: m.id });

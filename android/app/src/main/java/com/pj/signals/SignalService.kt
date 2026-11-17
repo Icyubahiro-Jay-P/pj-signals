@@ -18,7 +18,6 @@ import java.net.URL
 class SignalService : Service() {
     @Volatile private var topic = ""
     @Volatile private var conn: HttpURLConnection? = null
-    private var nextId = 100
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -60,10 +59,13 @@ class SignalService : Service() {
                         if (topic != t) break
                         wait = 5_000L
                         val j = JSONObject(line)
-                        if (j.optString("event") == "message") {
-                            show(j)
-                            prefs(this).edit().putString("lastId", j.getString("id")).apply()
+                        when (j.optString("event")) {
+                            "message" -> show(j)
+                            "message_delete" -> (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                                .cancel(j.optString("sequence_id").hashCode())
+                            else -> continue
                         }
+                        prefs(this).edit().putString("lastId", j.getString("id")).apply()
                     }
                 }
             } catch (e: Exception) {
@@ -85,7 +87,7 @@ class SignalService : Service() {
             .setStyle(Notification.BigTextStyle().bigText(msg))
             .setSmallIcon(R.drawable.ic_stat).setAutoCancel(true).setContentIntent(openApp())
             .setDefaults(Notification.DEFAULT_ALL).setPriority(Notification.PRIORITY_HIGH).build()
-        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(nextId++, n)
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(j.optString("id").hashCode(), n)   // id-based so a delete can cancel it
     }
 
     @Suppress("DEPRECATION")
